@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EchoLab 英文聽讀實驗室 (Senior High 100)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81'
+            },
+            surface: {
+              50: '#f8fafc',
+              100: '#f1f5f9',
+              200: '#e2e8f0',
+              800: '#1e293b',
+              900: '#0f172a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes wavePulse {
+      0%, 100% { height: 8px; }
+      50% { height: 38px; }
+    }
+    .wave-bar {
+      animation: wavePulse 1.2s ease-in-out infinite;
+    }
+    .wave-bar:nth-child(2) { animation-delay: 0.15s; }
+    .wave-bar:nth-child(3) { animation-delay: 0.3s; }
+    .wave-bar:nth-child(4) { animation-delay: 0.45s; }
+    .wave-bar:nth-child(5) { animation-delay: 0.2s; }
+    .wave-bar:nth-child(6) { animation-delay: 0.35s; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-brand-500 selection:text-white">
+
+  <!-- 頂部頂級工作列 -->
+  <nav class="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md sticky top-0 z-50 px-4 py-3 sm:px-8">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      
+      <!-- 品牌識別 -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-cyan-400 flex items-center justify-center text-white shadow-lg shadow-indigo-500/25">
+          <i class="fa-solid fa-waveform-lines text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-black text-lg tracking-tight text-white">EchoLab</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-mono font-bold border border-indigo-500/30">高中 100 核心詞</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Web Speech 聽力音波測試 & 語音跟讀實驗室</p>
+        </div>
+      </div>
+
+      <!-- 中央模式膠囊切換鈕 -->
+      <div class="flex items-center bg-slate-950 p-1.5 rounded-2xl border border-slate-800 shadow-inner">
+        <button id="navBtnListening" type="button" class="px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 bg-indigo-600 text-white shadow-md shadow-indigo-600/30">
+          <i class="fa-solid fa-volume-high"></i>
+          <span>聽辨聲波挑戰</span>
+        </button>
+        <button id="navBtnSpeaking" type="button" class="px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 text-slate-400 hover:text-white">
+          <i class="fa-solid fa-microphone-lines"></i>
+          <span>發音跟讀工坊</span>
+        </button>
+      </div>
+
+      <!-- 即時學習統計數據指標 -->
+      <div class="hidden lg:flex items-center gap-4 text-xs font-mono">
+        <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700/60">
+          <i class="fa-solid fa-fire text-amber-400 text-sm"></i>
+          <span class="text-slate-400">連勝:</span>
+          <strong id="topStreakDisplay" class="text-amber-400 font-bold">0 Hits</strong>
+        </div>
+        <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700/60">
+          <i class="fa-solid fa-chart-pie text-emerald-400 text-sm"></i>
+          <span class="text-slate-400">正確率:</span>
+          <strong id="topAccuracyDisplay" class="text-emerald-400 font-bold">0.0%</strong>
+        </div>
+      </div>
+
+    </div>
+  </nav>
+
+  <!-- 全域警示條（相容性或麥克風權限） -->
+  <div id="compatAlert" class="hidden bg-rose-950/80 border-b border-rose-500/50 text-rose-200 text-xs sm:text-sm px-4 py-2.5 text-center font-medium">
+    ⚠️ 瀏覽器支援提示：建議使用 Google Chrome 或 Microsoft Edge 開啟以獲取最完整的語音辨識與朗讀效果。
+  </div>
+
+  <!-- 主內容容器 -->
+  <main class="max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex-1 flex flex-col">
+    
+    <!-- ==================== 模式一：聽辨聲波挑戰 (全新排版) ==================== -->
+    <section id="viewListening" class="w-full flex flex-col gap-6">
+      
+      <!-- 頂部進度指標列 -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-800/40 border border-slate-800 p-4 rounded-2xl">
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">當前題號</span>
+          <span id="quizIndexText" class="text-lg font-black text-indigo-400 font-mono">01 / 100</span>
+          <span id="quizCategoryTag" class="text-xs px-2.5 py-0.5 rounded-lg bg-indigo-950 text-indigo-300 border border-indigo-500/30">學術思維</span>
+        </div>
+        <!-- 進度條 -->
+        <div class="w-full sm:w-64 bg-slate-850 h-2 rounded-full overflow-hidden border border-slate-800">
+          <div id="quizProgressBar" class="bg-gradient-to-r from-indigo-500 to-cyan-400 h-full w-[1%] transition-all duration-300"></div>
+        </div>
+      </div>
+
+      <!-- 核心工作台：左右對開結構 -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        
+        <!-- 左側：音訊發射台 (佔 5 欄) -->
+        <div class="lg:col-span-5 bg-slate-850 border border-slate-800 rounded-3xl p-6 sm:p-8 flex flex-col justify-between items-center text-center shadow-xl relative overflow-hidden group">
+          <div class="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent pointer-events-none"></div>
+
+          <!-- 頂部提示說明 -->
+          <div class="w-full flex items-center justify-between text-xs text-slate-400">
+            <span class="flex items-center gap-1.5"><i class="fa-solid fa-tower-broadcast text-indigo-400"></i> 音訊主控台</span>
+            <span class="font-mono text-slate-400">次數: <span id="quizListenCount" class="text-white font-bold">1</span></span>
+          </div>
+
+          <!-- 動態波形展示窗 -->
+          <div class="my-8 flex flex-col items-center gap-5 w-full">
+            <div class="w-full h-24 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center gap-2 px-4 relative overflow-hidden shadow-inner">
+              <div id="waveContainer" class="flex items-center justify-center gap-2 h-16 w-full opacity-60">
+                <span class="w-2 bg-indigo-500 rounded-full h-3 wave-bar"></span>
+                <span class="w-2 bg-cyan-400 rounded-full h-5 wave-bar"></span>
+                <span class="w-2 bg-indigo-400 rounded-full h-8 wave-bar"></span>
+                <span class="w-2 bg-pink-500 rounded-full h-4 wave-bar"></span>
+                <span class="w-2 bg-indigo-500 rounded-full h-7 wave-bar"></span>
+                <span class="w-2 bg-cyan-400 rounded-full h-3 wave-bar"></span>
+              </div>
+            </div>
+
+            <!-- 主播放大圓鈕 -->
+            <button id="btnQuizPlay" type="button" class="w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white shadow-xl shadow-indigo-500/30 active:scale-95 transition-all flex flex-col items-center justify-center gap-1 group">
+              <i id="btnQuizPlayIcon" class="fa-solid fa-play text-2xl group-hover:scale-110 transition-transform"></i>
+              <span class="text-[9px] font-mono tracking-wider uppercase font-bold text-indigo-100">Play</span>
+            </button>
+            <p class="text-xs text-slate-400">點擊播放或按鍵盤 <kbd class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono text-[11px]">Space</kbd></p>
+          </div>
+
+          <!-- 語速快捷調節 -->
+          <div class="w-full pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+            <span>播放速度：</span>
+            <div id="quizSpeedPills" class="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+              <button data-speed="0.8" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition">0.8x 慢速</button>
+              <button data-speed="1.0" class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-bold transition">1.0x 標準</button>
+              <button data-speed="1.2" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition">1.2x 快速</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右側：語意提示與四選一卡片陣列 (佔 7 欄) -->
+        <div class="lg:col-span-7 flex flex-col gap-4">
+          
+          <!-- 語境線索提點框 -->
+          <div class="bg-slate-850 border border-slate-800 rounded-2xl p-5 flex flex-col gap-2 shadow-md">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-indigo-400 flex items-center gap-1.5 uppercase tracking-wider">
+                <i class="fa-solid fa-lightbulb"></i> 語境與詞義線索 (Context Clue)
+              </span>
+              <span id="quizPosHint" class="text-slate-400 font-mono">Level 4-6 核心</span>
+            </div>
+            <div id="quizMeaningClue" class="text-lg sm:text-xl font-bold text-white tracking-wide">
+              "分析、仔細研究..."
+            </div>
+          </div>
+
+          <!-- 四選一選答卡排版 -->
+          <div id="quizOptionsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
+            <!-- 由 JS 動態生成選項卡片 -->
+          </div>
+
+          <!-- 狀態反饋與導航列 -->
+          <div class="bg-slate-850 border border-slate-800 rounded-2xl p-4 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <span class="text-slate-400">判定狀態：</span>
+              <span id="quizVerdictText" class="font-bold text-slate-300">尚未作答</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btnQuizPrevWord" type="button" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition font-medium flex items-center gap-1.5 disabled:opacity-40">
+                <i class="fa-solid fa-chevron-left text-[11px]"></i> 上一題
+              </button>
+              <button id="btnQuizNextWord" type="button" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition font-bold flex items-center gap-1.5 shadow-md shadow-indigo-600/30">
+                下一題 <i class="fa-solid fa-chevron-right text-[11px]"></i>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== 模式二：發音跟讀工坊 (全新排版) ==================== -->
+    <section id="viewSpeaking" class="hidden w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- 左側：單字字典庫索引抽屜 (佔 4 欄) -->
+      <aside class="lg:col-span-4 bg-slate-850 border border-slate-800 rounded-3xl p-5 flex flex-col gap-4 shadow-xl">
+        <div class="flex items-center justify-between">
+          <div class="font-bold text-sm text-white flex items-center gap-2">
+            <i class="fa-solid fa-books text-indigo-400"></i>
+            <span>高中 100 詞庫清單</span>
+          </div>
+          <span id="spkPassBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300 font-mono">0 / 100 通過</span>
+        </div>
+
+        <!-- 搜尋列 -->
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-500 text-xs"></i>
+          <input id="spkSearchInput" type="text" placeholder="搜尋英文單字 / 中文意涵..." class="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition">
+        </div>
+
+        <!-- 主題分類按鈕列 -->
+        <div id="spkCategoryPills" class="flex flex-wrap gap-1 text-xs">
+          <button data-cat="all" class="cat-chip active px-3 py-1 rounded-lg bg-indigo-600 text-white font-medium transition">全部</button>
+          <button data-cat="學術思維" class="cat-chip px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 transition">學術</button>
+          <button data-cat="社會政治" class="cat-chip px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 transition">社會</button>
+          <button data-cat="科技環境" class="cat-chip px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 transition">科技</button>
+          <button data-cat="心智情感" class="cat-chip px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 transition">心智</button>
+          <button data-cat="商務經濟" class="cat-chip px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 transition">商務</button>
+        </div>
+
+        <!-- 單字列表滾動框 -->
+        <div id="spkWordList" class="flex flex-col gap-1.5 max-h-[500px] overflow-y-auto pr-1">
+          <!-- JS 動態渲染清單項目 -->
+        </div>
+      </aside>
+
+      <!-- 右側：跟讀核心工作卡 (佔 8 欄) -->
+      <div class="lg:col-span-8 flex flex-col gap-5">
+        
+        <!-- 跟讀主角看板 -->
+        <div class="bg-slate-850 border border-slate-800 rounded-3xl p-6 sm:p-10 flex flex-col items-center gap-6 shadow-xl relative overflow-hidden">
+          
+          <div class="w-full flex items-center justify-between text-xs">
+            <span id="spkBadgeCategory" class="px-3 py-1 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/30 font-medium">學術思維</span>
+            <span id="spkIndicatorNum" class="text-slate-400 font-mono">Word 1 of 100</span>
+          </div>
+
+          <!-- 目標發音大卡 -->
+          <div class="text-center my-2">
+            <h2 id="spkTargetWord" class="text-4xl sm:text-5xl md:text-6xl font-black text-white tracking-tight">analyze</h2>
+            <div id="spkTargetPhonetic" class="text-base sm:text-lg font-mono text-indigo-400 mt-2 font-medium">/ˈænəlaɪz/</div>
+            <p id="spkTargetMeaning" class="text-base sm:text-lg text-slate-300 mt-2 font-semibold">分析、仔細研究某項事物</p>
+          </div>
+
+          <!-- 示範播放列 -->
+          <div class="flex items-center justify-center gap-4 py-3 border-y border-slate-800/80 w-full">
+            <button id="btnSpkListenDemo" type="button" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition flex items-center gap-2">
+              <i class="fa-solid fa-volume-high text-cyan-400"></i>
+              <span>標準發音示範 (Space)</span>
+            </button>
+          </div>
+
+          <!-- 麥克風跟讀核心按鈕與波形指示 -->
+          <div class="flex flex-col items-center gap-3 my-2">
+            <div class="relative flex items-center justify-center">
+              <div id="spkRecordingRing" class="absolute -inset-3 rounded-full bg-rose-500/20 blur-md hidden animate-pulse"></div>
+              <button id="btnSpkRecord" type="button" class="w-24 h-24 rounded-full bg-gradient-to-tr from-rose-600 to-indigo-600 hover:scale-105 active:scale-95 text-white shadow-xl shadow-rose-600/30 transition-all flex flex-col items-center justify-center gap-1 z-10">
+                <i id="spkRecordIcon" class="fa-solid fa-microphone text-3xl"></i>
+                <span id="spkRecordStatusText" class="text-[10px] font-bold tracking-wider uppercase">點擊錄音</span>
+              </button>
+            </div>
+            <span class="text-xs text-slate-400">點擊按鈕說出上方英文單字，系統將自動比對</span>
+          </div>
+
+          <!-- 辨識回饋看板 -->
+          <div class="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col gap-2">
+            <div class="flex items-center justify-between text-xs">
+              <span id="spkFeedbackLabel" class="font-bold text-slate-400 flex items-center gap-2">
+                <i class="fa-solid fa-comment-dots"></i> 辨識比對狀態
+              </span>
+              <span id="spkScorePercent" class="font-mono text-slate-400">發音精準度：0.0%</span>
+            </div>
+            <div id="spkRecognizedBox" class="text-sm sm:text-base font-medium text-slate-400 min-h-[36px] flex items-center">
+              等待收音，請點擊錄音按鈕後朗讀...
+            </div>
+          </div>
+
+          <!-- 切換題目列 -->
+          <div class="w-full flex items-center justify-between pt-2 border-t border-slate-800">
+            <button id="btnSpkPrev" type="button" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1 disabled:opacity-40">
+              <i class="fa-solid fa-arrow-left"></i> 上一個
+            </button>
+            <button id="btnSpkNext" type="button" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-1 shadow-md shadow-indigo-600/30">
+              下一個 <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // 台灣高中學測/指考 100 個高頻核心詞彙資料庫
+    const VOCABULARY = [
+      // 學術思維 (20)
+      { word: "analyze", phonetic: "/ˈænəlaɪz/", meaning: "分析、仔細研究", category: "學術思維" },
+      { word: "hypothesis", phonetic: "/haɪˈpɑːθəsɪs/", meaning: "假設、假說", category: "學術思維" },
+      { word: "perspective", phonetic: "/pərˈspektɪv/", meaning: "觀點、洞察力", category: "學術思維" },
+      { word: "evaluate", phonetic: "/ɪˈvæljueɪt/", meaning: "評估、評價價值", category: "學術思維" },
+      { word: "conclude", phonetic: "/kənˈkluːd/", meaning: "推斷出結論、結束", category: "學術思維" },
+      { word: "abstract", phonetic: "/ˈæbstrækt/", meaning: "抽象的、綱要", category: "學術思維" },
+      { word: "criteria", phonetic: "/kraɪˈtɪriə/", meaning: "準則、評判標準", category: "學術思維" },
+      { word: "demonstrate", phonetic: "/ˈdemənstreɪt/", meaning: "證明、示範操作", category: "學術思維" },
+      { word: "illustrate", phonetic: "/ˈɪləstreɪt/", meaning: "闡明、加插圖說明", category: "學術思維" },
+      { word: "logical", phonetic: "/ˈlɑːdʒɪkl/", meaning: "合乎邏輯的", category: "學術思維" },
+      { word: "objective", phonetic: "/əbˈdʒektɪv/", meaning: "客觀的、宗旨目標", category: "學術思維" },
+      { word: "phenomenon", phonetic: "/fəˈnɑːmɪnən/", meaning: "非凡現象、奇蹟", category: "學術思維" },
+      { word: "principle", phonetic: "/ˈprɪnsəpl/", meaning: "基本原則、定律", category: "學術思維" },
+      { word: "valid", phonetic: "/ˈvælɪd/", meaning: "有根據的、有效的", category: "學術思維" },
+      { word: "contradict", phonetic: "/ˌkɑːntrəˈdɪkt/", meaning: "自相矛盾、反駁", category: "學術思維" },
+      { word: "dimension", phonetic: "/daɪˈmenʃn/", meaning: "層面、維度", category: "學術思維" },
+      { word: "coherent", phonetic: "/koʊˈhɪrənt/", meaning: "條理連貫的", category: "學術思維" },
+      { word: "empirical", phonetic: "/ɪmˈpɪrɪkl/", meaning: "憑經驗實證的", category: "學術思維" },
+      { word: "parameter", phonetic: "/pəˈræmɪtər/", meaning: "參數、界限標準", category: "學術思維" },
+      { word: "preliminary", phonetic: "/prɪˈlɪmɪneri/", meaning: "初步的、序幕的", category: "學術思維" },
+
+      // 社會政治 (20)
+      { word: "legislation", phonetic: "/ˌledʒɪsˈleɪʃn/", meaning: "立法、法律規章", category: "社會政治" },
+      { word: "democracy", phonetic: "/dɪˈmɑːkrəsi/", meaning: "民主制度與精神", category: "社會政治" },
+      { word: "candidate", phonetic: "/ˈkændɪdeɪt/", meaning: "候選人、應試者", category: "社會政治" },
+      { word: "campaign", phonetic: "/kæmˈpeɪn/", meaning: "大型宣傳倡導活動", category: "社會政治" },
+      { word: "reform", phonetic: "/rɪˈfɔːrm/", meaning: "改革、改良體制", category: "社會政治" },
+      { word: "controversy", phonetic: "/ˈkɑːntrəvɜːrsi/", meaning: "重大爭議、爭論", category: "社會政治" },
+      { word: "advocate", phonetic: "/ˈædvəkeɪt/", meaning: "提倡、堅定倡導者", category: "社會政治" },
+      { word: "negotiate", phonetic: "/nɪˈɡoʊʃieɪt/", meaning: "談判、協商協議", category: "社會政治" },
+      { word: "treaty", phonetic: "/ˈtriːti/", meaning: "國際條約、公約", category: "社會政治" },
+      { word: "citizen", phonetic: "/ˈsɪtɪzn/", meaning: "現代公民、市民", category: "社會政治" },
+      { word: "ethnic", phonetic: "/ˈeθnɪk/", meaning: "民族的、種族的", category: "社會政治" },
+      { word: "integrity", phonetic: "/ɪnˈteɡrəti/", meaning: "正直品格、完整性", category: "社會政治" },
+      { word: "justice", phonetic: "/ˈdʒʌstɪs/", meaning: "社會正義、司法公平", category: "社會政治" },
+      { word: "privilege", phonetic: "/ˈprɪvəlɪdʒ/", meaning: "特權、特殊恩典", category: "社會政治" },
+      { word: "sanction", phonetic: "/ˈsæŋkʃn/", meaning: "經濟制裁、核准", category: "社會政治" },
+      { word: "welfare", phonetic: "/ˈwelfer/", meaning: "社會福利、幸福安康", category: "社會政治" },
+      { word: "corruption", phonetic: "/kəˈrʌpʃn/", meaning: "貪污舞弊、腐敗", category: "社會政治" },
+      { word: "diplomacy", phonetic: "/dɪˈploʊməsi/", meaning: "外交手腕、國交", category: "社會政治" },
+      { word: "immigrant", phonetic: "/ˈɪmɪɡrənt/", meaning: "外來移民", category: "社會政治" },
+      { word: "domestic", phonetic: "/dəˈmestɪk/", meaning: "國內的、家庭內部的", category: "社會政治" },
+
+      // 科技環境 (20)
+      { word: "biodiversity", phonetic: "/ˌbaɪoʊdaɪˈvɜːrsəti/", meaning: "生物多樣性", category: "科技環境" },
+      { word: "climate", phonetic: "/ˈklaɪmət/", meaning: "宏觀氣候、形勢氣候", category: "科技環境" },
+      { word: "sustainability", phonetic: "/səˌsteɪnəˈbɪləti/", meaning: "永續性、持續發展能力", category: "科技環境" },
+      { word: "ecosystem", phonetic: "/ˈiːkoʊsɪstəm/", meaning: "自然生態系統", category: "科技環境" },
+      { word: "renewable", phonetic: "/rɪˈnuːəbl/", meaning: "可再生再利用的", category: "科技環境" },
+      { word: "radiation", phonetic: "/ˌreɪdiˈeɪʃn/", meaning: "放射線、電磁輻射", category: "科技環境" },
+      { word: "catalyst", phonetic: "/ˈkætəlɪst/", meaning: "催化劑、促成變化的因子", category: "科技環境" },
+      { word: "cellular", phonetic: "/ˈseljələr/", meaning: "細胞構造的", category: "科技環境" },
+      { word: "habitat", phonetic: "/ˈhæbɪtæt/", meaning: "物種天然棲息地", category: "科技環境" },
+      { word: "particle", phonetic: "/ˈpɑːrtɪkl/", meaning: "微粒、物理粒子", category: "科技環境" },
+      { word: "organism", phonetic: "/ˈɔːrɡənɪzəm/", meaning: "生物體、有機生命", category: "科技環境" },
+      { word: "deficiency", phonetic: "/dɪˈfɪʃnsi/", meaning: "缺乏、營養不足缺陷", category: "科技環境" },
+      { word: "mutation", phonetic: "/mjuːˈteɪʃn/", meaning: "基因突變、異變", category: "科技環境" },
+      { word: "solar", phonetic: "/ˈsoʊlər/", meaning: "太陽能的、日光的", category: "科技環境" },
+      { word: "conservation", phonetic: "/ˌkɑːnsərˈveɪʃn/", meaning: "自然環境保育", category: "科技環境" },
+      { word: "carbon", phonetic: "/ˈkɑːrbən/", meaning: "碳元素、碳排放", category: "科技環境" },
+      { word: "erosion", phonetic: "/ɪˈroʊʒn/", meaning: "風化侵蝕、土壤沖刷", category: "科技環境" },
+      { word: "toxic", phonetic: "/ˈtɑːksɪk/", meaning: "有毒有害物質", category: "科技環境" },
+      { word: "synthetic", phonetic: "/sɪnˈθetɪk/", meaning: "人造合成化合物", category: "科技環境" },
+      { word: "fossil", phonetic: "/ˈfɑːsl/", meaning: "古生物化石、石化燃料", category: "科技環境" },
+
+      // 心智情感 (20)
+      { word: "empathy", phonetic: "/ˈempəθi/", meaning: "同理心、感同身受能力", category: "心智情感" },
+      { word: "anxiety", phonetic: "/æŋˈzaɪəti/", meaning: "焦慮、心理不安", category: "心智情感" },
+      { word: "intuition", phonetic: "/ˌɪntuˈɪʃn/", meaning: "敏銳直覺、第六感", category: "心智情感" },
+      { word: "subconscious", phonetic: "/ˌsʌbˈkɑːnʃəs/", meaning: "下意識的、潛意識層次", category: "心智情感" },
+      { word: "cognition", phonetic: "/kɑːɡˈnɪʃn/", meaning: "大腦認知力、知覺", category: "心智情感" },
+      { word: "ambition", phonetic: "/æmˈbɪʃn/", meaning: "抱負志向、雄心壯志", category: "心智情感" },
+      { word: "perception", phonetic: "/pərˈsepʃn/", meaning: "知覺感官、視角見解", category: "心智情感" },
+      { word: "compassion", phonetic: "/kəmˈpæʃn/", meaning: "惻隱同情心、憐憫", category: "心智情感" },
+      { word: "hesitation", phonetic: "/ˌhezɪˈteɪʃn/", meaning: "猶豫遲疑、躊躇不決", category: "心智情感" },
+      { word: "motivation", phonetic: "/ˌmoʊtɪˈveɪʃn/", meaning: "原動力、誘導動機", category: "心智情感" },
+      { word: "illusion", phonetic: "/ɪˈluːʒn/", meaning: "幻象、錯誤錯覺", category: "心智情感" },
+      { word: "optimistic", phonetic: "/ˌɑːptɪˈmɪstɪk/", meaning: "積極樂觀向上的", category: "心智情感" },
+      { word: "vulnerable", phonetic: "/ˈvʌlnərəbl/", meaning: "心靈脆弱易受害的", category: "心智情感" },
+      { word: "psychology", phonetic: "/saɪˈkɑːlədʒi/", meaning: "心理學、心理運作機制", category: "心智情感" },
+      { word: "temperament", phonetic: "/ˈtemprəmənt/", meaning: "性情氣質、脾氣", category: "心智情感" },
+      { word: "sentiment", phonetic: "/ˈsentɪmənt/", meaning: "深厚情操、情緒感傷", category: "心智情感" },
+      { word: "dignity", phonetic: "/ˈdɪɡnəti/", meaning: "人格尊嚴、莊嚴端莊", category: "心智情感" },
+      { word: "resilience", phonetic: "/rɪˈzɪliəns/", meaning: "心理韌性、快速復原力", category: "心智情感" },
+      { word: "grief", phonetic: "/ɡriːf/", meaning: "至深悲痛、哀傷", category: "心智情感" },
+      { word: "mindful", phonetic: "/ˈmaɪndfl/", meaning: "專注留心的、正念的", category: "心智情感" },
+
+      // 商務經濟 (20)
+      { word: "investment", phonetic: "/ɪnˈvestmənt/", meaning: "資產投資、資本挹注", category: "商務經濟" },
+      { word: "entrepreneur", phonetic: "/ˌɑːntrəprəˈnɜːr/", meaning: "開拓性企業家、創業家", category: "商務經濟" },
+      { word: "transaction", phonetic: "/trænˈzækʃn/", meaning: "商業交易業務、結算", category: "商務經濟" },
+      { word: "budget", phonetic: "/ˈbʌdʒɪt/", meaning: "財務預算規劃", category: "商務經濟" },
+      { word: "monopoly", phonetic: "/məˈnɑːpəli/", meaning: "市場獨佔、專賣權", category: "商務經濟" },
+      { word: "inflation", phonetic: "/ɪnˈfleɪʃn/", meaning: "物價通貨膨脹", category: "商務經濟" },
+      { word: "revenue", phonetic: "/ˈrevənuː/", meaning: "營收收益、財政總入", category: "商務經濟" },
+      { word: "bankruptcy", phonetic: "/ˈbæŋkrəptsi/", meaning: "破產清算、倒閉狀態", category: "商務經濟" },
+      { word: "dividend", phonetic: "/ˈdɪvɪdend/", meaning: "股東股利、分紅獎勵", category: "商務經濟" },
+      { word: "deficit", phonetic: "/ˈdefɪsɪt/", meaning: "貿易赤字、收支逆差", category: "商務經濟" },
+      { word: "corporate", phonetic: "/ˈkɔːrpərət/", meaning: "跨國企業的、法人組織的", category: "商務經濟" },
+      { word: "marketing", phonetic: "/ˈmɑːrkɪtɪŋ/", meaning: "整合市場行銷營運", category: "商務經濟" },
+      { word: "consumer", phonetic: "/kənˈsuːmər/", meaning: "一般終端消費者", category: "商務經濟" },
+      { word: "retail", phonetic: "/ˈriːteɪl/", meaning: "門市零售交易業", category: "商務經濟" },
+      { word: "liability", phonetic: "/ˌlaɪəˈbɪləti/", meaning: "財務負債、法律賠償責任", category: "商務經濟" },
+      { word: "strategy", phonetic: "/ˈstrætədʒi/", meaning: "長遠戰略、策略藍圖", category: "商務經濟" },
+      { word: "lucrative", phonetic: "/ˈluːkrətɪv/", meaning: "獲利豐厚可觀的", category: "商務經濟" },
+      { word: "shareholder", phonetic: "/ˈʃerhoʊldər/", meaning: "公司投資股東", category: "商務經濟" },
+      { word: "venture", phonetic: "/ˈventʃər/", meaning: "風險商業投機、創投", category: "商務經濟" },
+      { word: "enterprise", phonetic: "/ˈentərpraɪz/", meaning: "大型企劃事業、企業體", category: "商務經濟" }
+    ];
+
+    // 全域狀態機
+    let activeMode = "listening"; // 'listening' | 'speaking'
+    let quizIndex = 0;
+    let quizListeningRate = 1.0;
+    let quizStreak = 0;
+    let quizCorrect = 0;
+    let quizAttempted = 0;
+    let quizAnswerDone = false;
+    let quizPlayCount = 0;
+    let currentQuizOptions = [];
+
+    // 口說跟讀狀態
+    let spkIndex = 0;
+    let isRecording = false;
+    let spkAttempts = 0;
+    let spkSuccesses = 0;
+    const spkPassedSet = new Set();
+    let spkFilterCategory = "all";
+    let spkSearchTerm = "";
+
+    // Speech API 快取
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const hasTTS = 'speechSynthesis' in window;
+    const hasSTT = !!SpeechRec;
+    let speechRecognizer = null;
+    let englishVoice = null;
+
+    // DOM 元素引用
+    const navBtnListening = document.getElementById("navBtnListening");
+    const navBtnSpeaking = document.getElementById("navBtnSpeaking");
+    const viewListening = document.getElementById("viewListening");
+    const viewSpeaking = document.getElementById("viewSpeaking");
+    const topStreakDisplay = document.getElementById("topStreakDisplay");
+    const topAccuracyDisplay = document.getElementById("topAccuracyDisplay");
+    const compatAlert = document.getElementById("compatAlert");
+
+    // 聽力題 DOM
+    const quizIndexText = document.getElementById("quizIndexText");
+    const quizCategoryTag = document.getElementById("quizCategoryTag");
+    const quizProgressBar = document.getElementById("quizProgressBar");
+    const quizListenCount = document.getElementById("quizListenCount");
+    const waveContainer = document.getElementById("waveContainer");
+    const btnQuizPlay = document.getElementById("btnQuizPlay");
+    const btnQuizPlayIcon = document.getElementById("btnQuizPlayIcon");
+    const quizSpeedPills = document.getElementById("quizSpeedPills");
+    const quizPosHint = document.getElementById("quizPosHint");
+    const quizMeaningClue = document.getElementById("quizMeaningClue");
+    const quizOptionsContainer = document.getElementById("quizOptionsContainer");
+    const quizVerdictText = document.getElementById("quizVerdictText");
+    const btnQuizPrevWord = document.getElementById("btnQuizPrevWord");
+    const btnQuizNextWord = document.getElementById("btnQuizNextWord");
+
+    // 口說題 DOM
+    const spkPassBadge = document.getElementById("spkPassBadge");
+    const spkSearchInput = document.getElementById("spkSearchInput");
+    const spkCategoryPills = document.getElementById("spkCategoryPills");
+    const spkWordList = document.getElementById("spkWordList");
+    const spkBadgeCategory = document.getElementById("spkBadgeCategory");
+    const spkIndicatorNum = document.getElementById("spkIndicatorNum");
+    const spkTargetWord = document.getElementById("spkTargetWord");
+    const spkTargetPhonetic = document.getElementById("spkTargetPhonetic");
+    const spkTargetMeaning = document.getElementById("spkTargetMeaning");
+    const btnSpkListenDemo = document.getElementById("btnSpkListenDemo");
+    const btnSpkRecord = document.getElementById("btnSpkRecord");
+    const spkRecordIcon = document.getElementById("spkRecordIcon");
+    const spkRecordStatusText = document.getElementById("spkRecordStatusText");
+    const spkRecordingRing = document.getElementById("spkRecordingRing");
+    const spkFeedbackLabel = document.getElementById("spkFeedbackLabel");
+    const spkScorePercent = document.getElementById("spkScorePercent");
+    const spkRecognizedBox = document.getElementById("spkRecognizedBox");
+    const btnSpkPrev = document.getElementById("btnSpkPrev");
+    const btnSpkNext = document.getElementById("btnSpkNext");
+
+    function setupVoices() {
+      if (!hasTTS) return;
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices.length) return;
+      englishVoice = voices.find(v => v.lang === "en-US" && (v.name.includes("Google") || v.name.includes("Natural") || v.name.includes("Samantha")))
+                  || voices.find(v => v.lang.startsWith("en-US"))
+                  || voices.find(v => v.lang.startsWith("en"));
+    }
+
+    if (hasTTS) {
+      window.speechSynthesis.onvoiceschanged = setupVoices;
+      setupVoices();
+    }
+
+    if (!hasTTS || !hasSTT) {
+      compatAlert.classList.remove("hidden");
+    }
+
+    function cleanWord(str) {
+      return (str || "").toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()?'"]/g, "").replace(/\s+/g, " ").trim();
+    }
+
+    function playAudio(text, rate = 1.0, callback = null) {
+      if (!hasTTS) return;
+      if (isRecording && speechRecognizer) {
+        try { speechRecognizer.stop(); } catch(e){}
+        resetMicUI();
+      }
+      window.speechSynthesis.cancel();
+
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "en-US";
+      utter.rate = rate;
+      if (englishVoice) utter.voice = englishVoice;
+
+      utter.onend = () => { if (callback) callback(); };
+      utter.onerror = () => { if (callback) callback(); };
+
+      window.speechSynthesis.speak(utter);
+    }
+
+    const KEY_BADGES = ["A", "B", "C", "D"];
+
+    function getShuffledOptions(correctWord) {
+      const options = [correctWord];
+      const others = VOCABULARY.filter(v => v.word !== correctWord).sort(() => 0.5 - Math.random());
+      for (let i = 0; i < 3; i++) {
+        options.push(others[i].word);
+      }
+      return options.sort(() => 0.5 - Math.random());
+    }
+
+    function loadListeningQuestion() {
+      quizAnswerDone = false;
+      quizPlayCount = 0;
+      quizListenCount.textContent = quizPlayCount;
+      quizVerdictText.className = "font-bold text-slate-300";
+      quizVerdictText.textContent = "尚未作答，請聆聽後選出正解";
+
+      const current = VOCABULARY[quizIndex];
+      const padded = String(quizIndex + 1).padStart(2, '0');
+      quizIndexText.textContent = `${padded} / ${VOCABULARY.length}`;
+      quizCategoryTag.textContent = current.category;
+      quizProgressBar.style.width = `${((quizIndex + 1) / VOCABULARY.length) * 100}%`;
+      quizPosHint.textContent = `${current.phonetic} · 高中必考`;
+      quizMeaningClue.textContent = `"${current.meaning}"`;
+
+      currentQuizOptions = getShuffledOptions(current.word);
+      quizOptionsContainer.innerHTML = "";
+
+      currentQuizOptions.forEach((optWord, idx) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.dataset.word = optWord;
+        btn.dataset.index = idx;
+        btn.className = "quiz-opt-btn p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-indigo-500/60 hover:bg-slate-800 text-left transition-all flex items-center justify-between group shadow-sm active:scale-[0.99]";
+
+        btn.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="w-8 h-8 rounded-xl bg-slate-800 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white border border-slate-700/80 font-mono text-xs font-bold flex items-center justify-center transition">
+              ${KEY_BADGES[idx]}
+            </span>
+            <span class="font-bold text-slate-200 group-hover:text-white text-base">${optWord}</span>
+          </div>
+          <i class="fa-solid fa-arrow-right text-xs text-slate-600 group-hover:text-indigo-400 transition-transform group-hover:translate-x-1"></i>
+        `;
+
+        btn.addEventListener("click", () => handleQuizOptionChosen(btn, optWord, current.word));
+        quizOptionsContainer.appendChild(btn);
+      });
+
+      btnQuizPrevWord.disabled = quizIndex === 0;
+      btnQuizNextWord.disabled = quizIndex === VOCABULARY.length - 1;
+
+      triggerListeningAudio();
+    }
+
+    function triggerListeningAudio() {
+      const current = VOCABULARY[quizIndex];
+      quizPlayCount++;
+      quizListenCount.textContent = quizPlayCount;
+
+      btnQuizPlayIcon.className = "fa-solid fa-waveform-lines text-2xl animate-pulse";
+      waveContainer.classList.remove("opacity-60");
+      waveContainer.classList.add("opacity-100");
+
+      playAudio(current.word, quizListeningRate, () => {
+        btnQuizPlayIcon.className = "fa-solid fa-play text-2xl";
+        waveContainer.classList.remove("opacity-100");
+        waveContainer.classList.add("opacity-60");
+      });
+    }
+
+    function handleQuizOptionChosen(buttonEl, chosenWord, targetWord) {
+      if (quizAnswerDone) return;
+      quizAnswerDone = true;
+      quizAttempted++;
+
+      const isCorrect = chosenWord === targetWord;
+      const allButtons = quizOptionsContainer.querySelectorAll(".quiz-opt-btn");
+
+      if (isCorrect) {
+        quizCorrect++;
+        quizStreak++;
+        topStreakDisplay.textContent = `${quizStreak} Hits`;
+        quizVerdictText.className = "font-bold text-emerald-400 flex items-center gap-1.5";
+        quizVerdictText.innerHTML = `<i class="fa-solid fa-circle-check"></i> 答對了！正確答案是「${targetWord}」`;
+
+        buttonEl.className = "quiz-opt-btn p-4 rounded-2xl bg-emerald-950/70 border-2 border-emerald-400 text-emerald-200 font-bold text-base flex items-center justify-between shadow-lg shadow-emerald-500/10";
+        buttonEl.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="w-8 h-8 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs flex items-center justify-center">
+              <i class="fa-solid fa-check"></i>
+            </span>
+            <span class="font-bold text-white">${chosenWord}</span>
+          </div>
+          <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-mono font-bold">CORRECT</span>
+        `;
+      } else {
+        quizStreak = 0;
+        topStreakDisplay.textContent = `0 Hits`;
+        quizVerdictText.className = "font-bold text-rose-400 flex items-center gap-1.5";
+        quizVerdictText.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> 答錯了！正確答案是「${targetWord}」`;
+
+        buttonEl.className = "quiz-opt-btn p-4 rounded-2xl bg-rose-950/70 border-2 border-rose-500 text-rose-200 font-bold text-base flex items-center justify-between shadow-lg shadow-rose-500/10";
+        buttonEl.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="w-8 h-8 rounded-xl bg-rose-500 text-white font-bold text-xs flex items-center justify-center">
+              <i class="fa-solid fa-xmark"></i>
+            </span>
+            <span class="font-bold text-white">${chosenWord}</span>
+          </div>
+          <span class="text-xs bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded font-mono">MISS</span>
+        `;
+
+        allButtons.forEach(b => {
+          if (b.dataset.word === targetWord) {
+            b.className = "quiz-opt-btn p-4 rounded-2xl bg-emerald-950/30 border border-emerald-500/60 text-emerald-300 font-bold text-base flex items-center justify-between";
+            b.innerHTML = `
+              <div class="flex items-center gap-3">
+                <span class="w-8 h-8 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center justify-center">正解</span>
+                <span class="font-bold text-emerald-200">${targetWord}</span>
+              </div>
+              <i class="fa-solid fa-check text-emerald-400"></i>
+            `;
+          }
+        });
+      }
+
+      allButtons.forEach(b => b.classList.add("pointer-events-none"));
+      const acc = ((quizCorrect / quizAttempted) * 100).toFixed(1);
+      topAccuracyDisplay.textContent = `${acc}%`;
+    }
+
+    btnQuizPlay.addEventListener("click", triggerListeningAudio);
+
+    quizSpeedPills.querySelectorAll("button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        quizSpeedPills.querySelectorAll("button").forEach(b => {
+          b.className = "px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition";
+        });
+        btn.className = "px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-bold transition";
+        quizListeningRate = parseFloat(btn.dataset.speed);
+        triggerListeningAudio();
+      });
+    });
+
+    btnQuizNextWord.addEventListener("click", () => {
+      if (quizIndex < VOCABULARY.length - 1) {
+        quizIndex++;
+        loadListeningQuestion();
+      }
+    });
+
+    btnQuizPrevWord.addEventListener("click", () => {
+      if (quizIndex > 0) {
+        quizIndex--;
+        loadListeningQuestion();
+      }
+    });
+
+    if (hasSTT) {
+      speechRecognizer = new SpeechRec();
+      speechRecognizer.lang = "en-US";
+      speechRecognizer.interimResults = false;
+      speechRecognizer.maxAlternatives = 1;
+
+      speechRecognizer.onstart = () => {
+        isRecording = true;
+        spkRecordingRing.classList.remove("hidden");
+        spkRecordIcon.className = "fa-solid fa-stop text-3xl";
+        spkRecordStatusText.textContent = "收音中...";
+        spkFeedbackLabel.className = "font-bold text-indigo-400 flex items-center gap-2";
+        spkFeedbackLabel.innerHTML = `<i class="fa-solid fa-wave-pulse animate-pulse"></i> 正在聆聽您的發音，請朗讀單字...`;
+        spkRecognizedBox.innerHTML = `<span class="text-slate-400 italic">正在收音中...</span>`;
+      };
+
+      speechRecognizer.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        handleSpeakingResult(transcript);
+      };
+
+      speechRecognizer.onerror = (event) => {
+        isRecording = false;
+        resetMicUI();
+        spkFeedbackLabel.className = "font-bold text-rose-400 flex items-center gap-2";
+        spkFeedbackLabel.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> 辨識錯誤: ${event.error}`;
+      };
+
+      speechRecognizer.onend = () => {
+        isRecording = false;
+        resetMicUI();
+      };
+    }
+
+    function resetMicUI() {
+      spkRecordingRing.classList.add("hidden");
+      spkRecordIcon.className = "fa-solid fa-microphone text-3xl";
+      spkRecordStatusText.textContent = "點擊錄音";
+    }
+
+    function handleSpeakingResult(transcript) {
+      spkAttempts++;
+      const current = VOCABULARY[spkIndex];
+      const targetClean = cleanWord(current.word);
+      const spokenClean = cleanWord(transcript);
+      const isMatch = targetClean === spokenClean;
+
+      if (isMatch) {
+        spkSuccesses++;
+        spkPassedSet.add(spkIndex);
+        spkFeedbackLabel.className = "font-bold text-emerald-400 flex items-center gap-2";
+        spkFeedbackLabel.innerHTML = `<i class="fa-solid fa-circle-check"></i> 發音標準！辨識完全吻合！`;
+        spkRecognizedBox.innerHTML = `您唸的是：<span class="text-emerald-300 font-bold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30">${transcript}</span>`;
+      } else {
+        spkFeedbackLabel.className = "font-bold text-rose-400 flex items-center gap-2";
+        spkFeedbackLabel.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> 稍微有些偏差，請再試一次！`;
+        renderDifference(current.word, transcript);
+      }
+
+      updateSpeakingStatus();
+      renderSpeakingIndexList();
+    }
+
+    function renderDifference(target, spoken) {
+      const targetWords = cleanWord(target).split(" ");
+      const spokenWords = cleanWord(spoken).split(" ");
+
+      let html = "您唸的是：";
+      spokenWords.forEach(w => {
+        if (targetWords.includes(w)) {
+          html += `<span class="text-emerald-400 font-bold mx-1">${w}</span>`;
+        } else {
+          html += `<span class="text-rose-400 line-through bg-rose-950/80 px-1.5 py-0.5 rounded border border-rose-500/30 mx-1">${w}</span>`;
+        }
+      });
+      html += ` (目標：<span class="text-indigo-300 font-bold underline ml-1">${target}</span>)`;
+      spkRecognizedBox.innerHTML = html;
+    }
+
+    function updateSpeakingStatus() {
+      spkPassBadge.textContent = `${spkPassedSet.size} / ${VOCABULARY.length} 通過`;
+      const pct = spkAttempts === 0 ? "0.0" : ((spkSuccesses / spkAttempts) * 100).toFixed(1);
+      spkScorePercent.textContent = `發音精準度：${pct}% (${spkSuccesses}/${spkAttempts})`;
+    }
+
+    function loadSpeakingCard() {
+      const current = VOCABULARY[spkIndex];
+      spkBadgeCategory.textContent = current.category;
+      spkIndicatorNum.textContent = `Word ${spkIndex + 1} of ${VOCABULARY.length}`;
+      spkTargetWord.textContent = current.word;
+      spkTargetPhonetic.textContent = current.phonetic;
+      spkTargetMeaning.textContent = current.meaning;
+
+      btnSpkPrev.disabled = spkIndex === 0;
+      btnSpkNext.disabled = spkIndex === VOCABULARY.length - 1;
+
+      if (spkPassedSet.has(spkIndex)) {
+        spkFeedbackLabel.className = "font-bold text-emerald-400 flex items-center gap-2";
+        spkFeedbackLabel.innerHTML = `<i class="fa-solid fa-badge-check"></i> 此單字先前已通過！可隨時重讀複習。`;
+      } else {
+        spkFeedbackLabel.className = "font-bold text-slate-400 flex items-center gap-2";
+        spkFeedbackLabel.innerHTML = `<i class="fa-solid fa-comment-dots"></i> 等待跟讀錄音...`;
+      }
+      spkRecognizedBox.innerHTML = `<span class="text-slate-400">點擊錄音按鈕並清晰說出「${current.word}」</span>`;
+    }
+
+    function renderSpeakingIndexList() {
+      spkWordList.innerHTML = "";
+      const filtered = VOCABULARY.map((v, i) => ({ ...v, originalIndex: i }))
+        .filter(item => {
+          const catPass = (spkFilterCategory === "all" || item.category === spkFilterCategory);
+          const searchPass = item.word.toLowerCase().includes(spkSearchTerm.toLowerCase()) || item.meaning.includes(spkSearchTerm);
+          return catPass && searchPass;
+        });
+
+      filtered.forEach(item => {
+        const isCurrent = item.originalIndex === spkIndex;
+        const isPassed = spkPassedSet.has(item.originalIndex);
+
+        const row = document.createElement("div");
+        row.className = `p-2.5 rounded-xl flex items-center justify-between cursor-pointer border text-xs transition-all ${
+          isCurrent 
+            ? "bg-indigo-600/20 border-indigo-500 text-white font-bold shadow-sm" 
+            : "bg-slate-900 border-slate-800 hover:bg-slate-800 text-slate-300"
+        }`;
+
+        row.innerHTML = `
+          <div class="flex items-center gap-2 overflow-hidden">
+            <span class="w-4 text-center">
+              ${isPassed ? '<i class="fa-solid fa-circle-check text-emerald-400"></i>' : '<i class="fa-regular fa-circle text-slate-600"></i>'}
+            </span>
+            <span class="truncate font-semibold">${item.word}</span>
+          </div>
+          <span class="text-[11px] text-slate-400 font-normal truncate max-w-[100px]">${item.meaning}</span>
+        `;
+
+        row.addEventListener("click", () => {
+          spkIndex = item.originalIndex;
+          loadSpeakingCard();
+          renderSpeakingIndexList();
+          playAudio(VOCABULARY[spkIndex].word);
+        });
+
+        spkWordList.appendChild(row);
+      });
+    }
+
+    btnSpkListenDemo.addEventListener("click", () => {
+      playAudio(VOCABULARY[spkIndex].word);
+    });
+
+    btnSpkRecord.addEventListener("click", () => {
+      if (!speechRecognizer) return;
+      if (isRecording) {
+        speechRecognizer.stop();
+      } else {
+        speechRecognizer.start();
+      }
+    });
+
+    btnSpkNext.addEventListener("click", () => {
+      if (spkIndex < VOCABULARY.length - 1) {
+        spkIndex++;
+        loadSpeakingCard();
+        renderSpeakingIndexList();
+      }
+    });
+
+    btnSpkPrev.addEventListener("click", () => {
+      if (spkIndex > 0) {
+        spkIndex--;
+        loadSpeakingCard();
+        renderSpeakingIndexList();
+      }
+    });
+
+    spkSearchInput.addEventListener("input", (e) => {
+      spkSearchTerm = e.target.value.trim();
+      renderSpeakingIndexList();
+    });
+
+    spkCategoryPills.querySelectorAll(".cat-chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        spkCategoryPills.querySelectorAll(".cat-chip").forEach(c => {
+          c.className = "cat-chip px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 transition";
+        });
+        chip.className = "cat-chip active px-3 py-1 rounded-lg bg-indigo-600 text-white font-medium transition";
+        spkFilterCategory = chip.dataset.cat;
+        renderSpeakingIndexList();
+      });
+    });
+
+    // 導覽標籤模式切換
+    navBtnListening.addEventListener("click", () => {
+      activeMode = "listening";
+      navBtnListening.className = "px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 bg-indigo-600 text-white shadow-md shadow-indigo-600/30";
+      navBtnSpeaking.className = "px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 text-slate-400 hover:text-white";
+      viewListening.classList.remove("hidden");
+      viewSpeaking.classList.add("hidden");
+      if (isRecording && speechRecognizer) speechRecognizer.stop();
+    });
+
+    navBtnSpeaking.addEventListener("click", () => {
+      activeMode = "speaking";
+      navBtnSpeaking.className = "px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 bg-indigo-600 text-white shadow-md shadow-indigo-600/30";
+      navBtnListening.className = "px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 text-slate-400 hover:text-white";
+      viewSpeaking.classList.remove("hidden");
+      viewListening.classList.add("hidden");
+      loadSpeakingCard();
+      renderSpeakingIndexList();
+    });
+
+    // 鍵盤盲打快捷鍵：Space 播放 / A, B, C, D 或 1, 2, 3, 4 答題
+    window.addEventListener("keydown", (e) => {
+      if (e.target.tagName === 'INPUT') return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (activeMode === "listening") {
+          triggerListeningAudio();
+        } else {
+          playAudio(VOCABULARY[spkIndex].word);
+        }
+      } else if (activeMode === "listening" && !quizAnswerDone) {
+        const keyMap = {
+          'KeyA': 0, 'Digit1': 0,
+          'KeyB': 1, 'Digit2': 1,
+          'KeyC': 2, 'Digit3': 2,
+          'KeyD': 3, 'Digit4': 3
+        };
+        if (keyMap.hasOwnProperty(e.code)) {
+          const idx = keyMap[e.code];
+          const buttons = quizOptionsContainer.querySelectorAll(".quiz-opt-btn");
+          if (buttons[idx]) {
+            buttons[idx].click();
+          }
+        }
+      }
+    });
+
+    // 初始載入渲染
+    window.addEventListener("DOMContentLoaded", () => {
+      loadListeningQuestion();
+      loadSpeakingCard();
+      renderSpeakingIndexList();
+      updateSpeakingStatus();
+    });
+  </script>
+</body>
+</html>
